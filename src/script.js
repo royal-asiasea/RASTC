@@ -3,6 +3,57 @@
    script.js — Vanilla JS for interactivity
    ========================================================= */
 
+/* ---------- Haptic Feedback Engine ---------- */
+/*
+  Lightweight wrapper around the Vibration API.
+  Designed to be subtle, fast and non-intrusive — short pulses only.
+  Silently no-ops on devices/browsers without support (desktop, iOS Safari, etc).
+*/
+const Haptics = (() => {
+  const supported = typeof window !== 'undefined' &&
+    'vibrate' in window.navigator &&
+    typeof window.navigator.vibrate === 'function';
+
+  const prefersReducedMotion = typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Patterns kept intentionally short (ms) for a subtle, non-buzzy feel.
+  const patterns = {
+    tap: 22,                // click — links, icons, menu items
+    select: 30,             // selection / toggle — buttons, form controls
+    cardPress: 26,          // card press
+    dragStart: 18,          // beginning of a drag/swipe gesture
+    slideChange: 35,        // a carousel slide successfully snapped/changed
+    confirm: [25, 40, 25]   // success / submit confirmation
+  };
+
+  let lastFireTime = 0;
+  const MIN_INTERVAL_MS = 80; // throttle so rapid-fire events don't feel like a buzz
+
+  function fire(pattern) {
+    if (!supported || prefersReducedMotion) return;
+    const now = performance.now();
+    if (now - lastFireTime < MIN_INTERVAL_MS) return;
+    lastFireTime = now;
+    try {
+      window.navigator.vibrate(pattern);
+    } catch (err) {
+      /* fail silently — haptics are purely an enhancement */
+    }
+  }
+
+  return {
+    tap: () => fire(patterns.tap),
+    select: () => fire(patterns.select),
+    cardPress: () => fire(patterns.cardPress),
+    dragStart: () => fire(patterns.dragStart),
+    slideChange: () => fire(patterns.slideChange),
+    confirm: () => fire(patterns.confirm),
+    isSupported: () => supported
+  };
+})();
+
 function initInfiniteProductsStrip(strip) {
   const viewport = strip.querySelector('.products-strip-viewport');
   const track = strip.querySelector('.products-strip-track');
@@ -92,7 +143,9 @@ function initInfiniteProductsStrip(strip) {
   viewport.addEventListener('mouseup', stopDragging);
   viewport.addEventListener('mouseleave', stopDragging);
 
-  viewport.addEventListener('touchstart', () => { isTouching = true; }, { passive: true });
+  viewport.addEventListener('touchstart', () => {
+    isTouching = true;
+  }, { passive: true });
   viewport.addEventListener('touchend', () => {
     isTouching = false;
     normalizeScroll();
@@ -101,7 +154,25 @@ function initInfiniteProductsStrip(strip) {
   strip.addEventListener('mouseenter', () => { isHovering = true; });
   strip.addEventListener('mouseleave', () => { isHovering = false; });
 
+  let lastActiveSlideIndex = -1;
+
+  function trackSlideChange() {
+    if (!setWidth) return;
+    const slideEls = [...track.children].filter((el) => el.getAttribute('aria-hidden') !== 'true' || true);
+    if (!slideEls.length) return;
+    const slideWidth = track.scrollWidth / track.children.length;
+    if (!slideWidth) return;
+    const currentIndex = Math.round(viewport.scrollLeft / slideWidth);
+    if (currentIndex !== lastActiveSlideIndex) {
+      if (lastActiveSlideIndex !== -1 && (isDragging || isTouching)) {
+        Haptics.slideChange();
+      }
+      lastActiveSlideIndex = currentIndex;
+    }
+  }
+
   viewport.addEventListener('scroll', normalizeScroll, { passive: true });
+  viewport.addEventListener('scroll', trackSlideChange, { passive: true });
 
   window.addEventListener('resize', () => {
     const ratio = setWidth ? viewport.scrollLeft / setWidth : 1;
@@ -205,5 +276,38 @@ document.addEventListener('DOMContentLoaded', () => {
   if (productsStrip) {
     initInfiniteProductsStrip(productsStrip);
   }
+
+  /* ---------- Global Haptic Feedback Wiring ---------- */
+  /*
+    Applies a strong, consistent haptic pulse on actual clicks across
+    every interactive element on the page: buttons, links, cards,
+    icons, menu items, and form controls. Uses event delegation so
+    it also covers elements that are dynamically cloned (e.g. the
+    carousel slides). Fires only on real interaction — no pre-emptive
+    or anticipatory pulses.
+  */
+  (() => {
+    if (!Haptics.isSupported()) return;
+
+    const SELECTOR_MAP = [
+      { selector: '.btn, button, [role="button"]', handler: Haptics.select },
+      { selector: 'a[href]', handler: Haptics.tap },
+      { selector: '.contact-card', handler: Haptics.cardPress },
+      { selector: '.info-card, .director-card, .goal-item', handler: Haptics.cardPress },
+      { selector: '.products-slide', handler: Haptics.tap },
+      { selector: 'input, select, textarea, label', handler: Haptics.select },
+      { selector: '.products-strip-track svg, .info-card-icon, .contact-icon', handler: Haptics.tap }
+    ];
+
+    document.addEventListener('click', (e) => {
+      for (const { selector, handler } of SELECTOR_MAP) {
+        const match = e.target.closest(selector);
+        if (match) {
+          handler();
+          break;
+        }
+      }
+    }, { passive: true });
+  })();
 
 });
