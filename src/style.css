@@ -628,20 +628,14 @@ section {
 
 .contact-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
+  max-width: 1080px;
+  margin-inline: auto;
 }
 
-.contact-card:nth-child(-n + 3) {
-  grid-column: span 2;
-}
-
-.contact-card:nth-child(4) {
-  grid-column: 2 / 4;
-}
-
-.contact-card:nth-child(5) {
-  grid-column: 4 / 6;
+.contact-card:nth-child(4):last-child {
+  grid-column: 2;
 }
 
 .contact-card {
@@ -661,16 +655,6 @@ section {
   transform: translateY(-6px);
   box-shadow: var(--shadow-md);
   background: var(--color-off-white);
-}
-
-.contact-card--static {
-  cursor: default;
-}
-
-.contact-card--static:hover {
-  transform: none;
-  box-shadow: var(--shadow-sm);
-  background: var(--color-white);
 }
 
 .contact-icon {
@@ -912,7 +896,7 @@ section {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .contact-card:nth-child(-n + 5) {
+  .contact-card:nth-child(4):last-child {
     grid-column: auto;
   }
 
@@ -939,7 +923,7 @@ section {
     grid-template-columns: 1fr;
   }
 
-  .contact-card:nth-child(-n + 5) {
+  .contact-card:nth-child(4):last-child {
     grid-column: auto;
   }
 

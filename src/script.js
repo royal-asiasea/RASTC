@@ -242,6 +242,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  /* ---------- Scroll to Section (no URL hash) ---------- */
+  document.querySelectorAll('[data-scroll-to]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.scrollTo);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  });
+
+  if (window.location.hash === '#contact') {
+    const contactSection = document.getElementById('contact');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'instant' });
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }
+
   /* ---------- Back to Top Button ---------- */
   const backToTopBtn = document.getElementById('backToTop');
 
