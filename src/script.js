@@ -277,17 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ---------- Director Photo Fallbacks ---------- */
-  document.querySelectorAll('.director-card__image[data-fallback]').forEach((img) => {
-    img.addEventListener('error', function handleImageError() {
-      const fallback = this.dataset.fallback;
-      if (fallback && this.src !== fallback) {
-        this.src = fallback;
-      }
-      this.removeEventListener('error', handleImageError);
-    }, { once: true });
-  });
-
   /* ---------- Products Infinite Drag Scroll ---------- */
   const productsStrip = document.querySelector('.products-strip');
 
@@ -311,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
       { selector: '.btn, button, [role="button"]', handler: Haptics.select },
       { selector: 'a[href]', handler: Haptics.tap },
       { selector: '.contact-card', handler: Haptics.cardPress },
-      { selector: '.info-card, .director-card, .goal-item', handler: Haptics.cardPress },
+      { selector: '.info-card, .goal-item', handler: Haptics.cardPress },
       { selector: '.products-slide', handler: Haptics.tap },
       { selector: 'input, select, textarea, label', handler: Haptics.select },
       { selector: '.products-strip-track svg, .info-card-icon, .contact-icon', handler: Haptics.tap }
